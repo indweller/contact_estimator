@@ -1,4 +1,3 @@
-#!/home/learning/miniconda3/envs/tdmpc2 python
 import rospy
 from std_msgs.msg import String
 from sensor_msgs.msg import JointState, Imu
@@ -23,7 +22,7 @@ class ContactNode:
         self.model.load_state_dict(torch.load(package_path + f'/logs/MLP_512_BCE/{latest_run}/model.pth'))
         self.model.to('cpu')
         self.joint_state_sub = rospy.Subscriber('/hector_gazebo_drift/joint_states', JointState, self.joint_state_cb)
-        self.imu_sub = rospy.Subscriber('/vectornav/IMU', Imu, self.imu_cb)
+        self.imu_sub = rospy.Subscriber('/hector_gazebo_drift/imu', Imu, self.imu_cb)
         self.contact_pub = rospy.Publisher('/contact_state', ContactArray, queue_size=1)
         self.rate = rospy.Rate(1000)
 

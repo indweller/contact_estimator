@@ -48,24 +48,19 @@ def read_imu(msg):
                          msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z])
     return imu_data
 
-def get_csv_data(csv_file=None, parser=None, start_time=None, end_time=None):
+def get_csv_data(csv_file=None, parser=None):
     data = pd.read_csv(csv_file, header=None, sep='\t')
     data = data.to_numpy()
-    data = data[start_time:end_time+1, :]
     print(f"csv_file: {data.shape}")
     return data
 
-def get_rosbag_data(bag_file=None, topic_name=None, parser=None, start_time=None, end_time=None):
+def get_rosbag_data(bag_file=None, topic_name=None, parser=None):
     messages = []
 
     with rosbag.Bag(bag_file, 'r') as bag:
         for topic, msg, t in bag.read_messages(topics=[topic_name]):
-            if int(msg.header.stamp.secs) < start_time:
-                continue
             message_data = parser(msg)
             messages.append(message_data)
-            if int(msg.header.stamp.secs) > end_time:
-                break
 
     messages = np.array(messages)
     print(f"topic: {topic_name}, messages: {messages.shape}")
@@ -79,20 +74,24 @@ def preprocess_data(config=None, instance=None):
     joint_state_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"], 
                                     topic_name='/hector_gazebo_drift/joint_states',
                                     parser=read_joint_states,
-                                    start_time=instance["start_time"],
-                                    end_time=instance["end_time"],
     )
     imu_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"],
-                                topic_name='/vectornav/IMU',
+                                topic_name='/hector_gazebo_drift/imu',
                                 parser=read_imu,
-                                start_time=instance["start_time"],
-                                end_time=instance["end_time"],
     )
 
     contact_data = get_csv_data(csv_file=config["package_path"] + 'data/' + instance["csv_file"], 
-                                parser=None, 
-                                start_time=instance["start_time"], 
-                                end_time=instance["end_time"])
+                                parser=None
+    )
+    
+    joint_state_data = joint_state_data[instance["start_time"]:instance["end_time"], :]
+    imu_data = imu_data[instance["start_time"]:instance["end_time"], :]
+    contact_data = contact_data[instance["start_time"]:instance["end_time"], :]
+
+    min_len = min(joint_state_data.shape[0], imu_data.shape[0], contact_data.shape[0])
+    joint_state_data = joint_state_data[:min_len, :]
+    imu_data = imu_data[:min_len, :]
+    contact_data = contact_data[:min_len, :]
 
     print(f"joint_state_data: {joint_state_data.shape}, imu_data: {imu_data.shape}, contact_data: {contact_data.shape}\n")
 
