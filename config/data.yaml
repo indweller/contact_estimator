@@ -1,5 +1,10 @@
-bag_file: data/Lokesh_training_data_rosbag1/2024-07-10-18-33-23.bag
-csv_file: data/Lokesh_training_data_rosbag1/mocap_contact_processed.csv
-start_time: 0
-end_time: 1720661632
-data_version: 3
+data_version: latest
+dataset:
+  - bag_file: 2024-07-10-18-33-23.bag
+    csv_file: mocap_contact_processed.csv
+    start_time: 0
+    end_time: 1720661632
+  - bag_file: 2024-07-10-18-33-23.bag
+    csv_file: mocap_contact_processed.csv
+    start_time: 1720661632
+    end_time: 1720661642

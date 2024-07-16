@@ -2,6 +2,7 @@ import rosbag
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import os
 
 joints = ['L_hip', 'L_hip2', 'L_thigh', 'L_calf', 'L_toe',
             'R_hip', 'R_hip2', 'R_thigh', 'R_calf', 'R_toe']
@@ -74,29 +75,45 @@ def upsample_array(arr, factor):
     arr = np.repeat(arr, factor, axis=0)
     return arr
 
-def preprocess_data(config=None):
-    assert config["package_path"] is not None, "Please provide a package path"
-    assert config["bag_file"] is not None, "Please provide a bag file path"
-    assert config["csv_file"] is not None, "Please provide a csv file path"
-    config["bag_file"] = config["package_path"] + config["bag_file"]
-    config["csv_file"] = config["package_path"] + config["csv_file"]
-    joint_state_data = get_rosbag_data(bag_file=config["bag_file"], 
+def preprocess_data(config=None, instance=None):
+    joint_state_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"], 
                                     topic_name='/hector_gazebo_drift/joint_states',
                                     parser=read_joint_states,
-                                    start_time=config["start_time"],
-                                    end_time=config["end_time"],
+                                    start_time=instance["start_time"],
+                                    end_time=instance["end_time"],
     )
-    imu_data = get_rosbag_data(bag_file=config["bag_file"],
+    imu_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"],
                                 topic_name='/vectornav/IMU',
                                 parser=read_imu,
-                                start_time=config["start_time"],
-                                end_time=config["end_time"],
+                                start_time=instance["start_time"],
+                                end_time=instance["end_time"],
     )
 
-    contact_data = get_csv_data(csv_file=config["csv_file"], parser=None, start_time=config["start_time"], end_time=config["end_time"])
+    contact_data = get_csv_data(csv_file=config["package_path"] + 'data/' + instance["csv_file"], 
+                                parser=None, 
+                                start_time=instance["start_time"], 
+                                end_time=instance["end_time"])
 
-    print(f"joint_state_data: {joint_state_data.shape}, imu_data: {imu_data.shape}, contact_data: {contact_data.shape}")
+    print(f"joint_state_data: {joint_state_data.shape}, imu_data: {imu_data.shape}, contact_data: {contact_data.shape}\n")
 
+    return joint_state_data, imu_data, contact_data
+
+def run(config):
+    assert config["package_path"] is not None, "Please provide a package path"
+    joint_states = []
+    imus = []
+    contacts = []
+    for instance in config['dataset']:
+        joint_state_data, imu_data, contact_data = preprocess_data(config, instance)
+        joint_states.append(joint_state_data)
+        imus.append(imu_data)
+        contacts.append(contact_data)
+    joint_state_data = np.concatenate(joint_states)
+    imu_data = np.concatenate(imus)
+    contact_data = np.concatenate(contacts)
+
+    print(f"Final joint_state_data: {joint_state_data.shape}, imu_data: {imu_data.shape}, contact_data: {contact_data.shape}")
+    os.makedirs(config["package_path"] + 'data/processed/', exist_ok=True)
     np.save(config["package_path"] + f'data/processed/joint_state_data_{config["data_version"]}.npy', joint_state_data)
     np.save(config["package_path"] + f'data/processed/imu_data_{config["data_version"]}.npy', imu_data)
     np.save(config["package_path"] + f'data/processed/contact_data_{config["data_version"]}.npy', contact_data)

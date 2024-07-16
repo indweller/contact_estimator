@@ -15,7 +15,13 @@ def main():
 
     data_config = yaml.load(open(args.absolute_package_path + 'config/data.yaml', 'r'), Loader=yaml.FullLoader)
     data_config['package_path'] = args.absolute_package_path
-    preprocess.preprocess_data(data_config)
+    if data_config['data_version'] == 'latest':
+        try:
+            latest_version = 1 + max([int(f.split('_')[-1].split('.')[0]) for f in os.listdir(data_config['package_path'] + 'data/processed/') if 'joint_state_data' in f])
+            data_config['data_version'] = latest_version
+        except:
+            data_config['data_version'] = 1
+    preprocess.run(data_config)
     train_config = yaml.load(open(args.absolute_package_path + 'config/train.yaml', 'r'), Loader=yaml.FullLoader)
     train_config['package_path'] = args.absolute_package_path
     train_config['data_version'] = data_config['data_version']
