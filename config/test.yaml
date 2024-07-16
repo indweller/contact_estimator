@@ -1,0 +1,6 @@
+exp_name: dummy
+run_name: latest
+train_size: 1.0 # Always use the full dataset
+batch_size: 32
+seed: 42
+data_version: 1
