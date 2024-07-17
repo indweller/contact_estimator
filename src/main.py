@@ -10,7 +10,7 @@ def main():
     package_path = os.path.dirname(os.path.abspath(__file__)) + '/'
     package_path = '/'.join(package_path.split('/')[:-2]) + '/'
     parser.add_argument('--absolute_package_path', type=str, help='Absolute path to package', default=package_path)
-    parser.add_argument('--test_data_version', type=int, help='Data version', default=1)
+    parser.add_argument('--test_data_version', type=int, help='Data version', default=None)
     args = parser.parse_args()
 
     data_config = yaml.load(open(args.absolute_package_path + 'config/data.yaml', 'r'), Loader=yaml.FullLoader)
@@ -28,7 +28,10 @@ def main():
     train.run(train_config)
     test_config = yaml.load(open(args.absolute_package_path + 'config/test.yaml', 'r'), Loader=yaml.FullLoader)
     test_config['package_path'] = args.absolute_package_path
-    test_config['data_version'] = args.test_data_version
+    if args.test_data_version is None:
+        test_config['data_version'] = data_config['data_version']
+    else:
+        test_config['data_version'] = args.test_data_version
     test_config['exp_name'] = train_config['exp_name']
     test.run(test_config)
 
