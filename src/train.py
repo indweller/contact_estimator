@@ -4,72 +4,37 @@ import numpy as np
 import yaml
 import matplotlib.pyplot as plt
 from datetime import datetime
+from tqdm import tqdm
 
 import data_utils
 import models
 import os
+from common import *
 
-def plot_loss(train_loss, val_loss, config):
-    plt.plot(train_loss, label='train')
-    plt.plot(val_loss, label='val')
-    plt.legend()
-    plt.title(f'{config["criterion"]} Loss, model: {config["model"]}, dataset: {config["dataset"]}')
-    plt.savefig(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/loss.png')
-
-def get_accuracy_CE(outputs, labels):
-    return (outputs.argmax(dim=1) == labels).float().mean()
-
-def get_accuracy_BCE(outputs, labels):
-    return ((outputs > 0).float() == labels).float().mean()
-
-def evaluate(model, val_loader, criterion, acc_fn, device, config):
-    model.eval()
-    model.to(device)
-    running_loss = 0.0
-    acc = 0
-    with torch.no_grad():
-        for i, data in enumerate(val_loader, 0):
-            inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            running_loss += loss.item()
-            acc += acc_fn(outputs, labels)
-    return running_loss / len(val_loader), acc / len(val_loader)
-
-def train(model, train_loader, val_loader, optimizer, criterion, acc_fn, config):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.train()
-    model.to(device)
+def train(model, train_loader, val_loader, optimizer, criterion, pred_fn, config):
     losses = {'train': [], 'val': []}
-    for epoch in range(config['epochs']):
-        running_loss = 0.0
-        acc = 0
-        for i, data in enumerate(train_loader, 0):
-            inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
-            optimizer.zero_grad()
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
-            acc += acc_fn(outputs, labels)
-        losses['train'].append(running_loss / len(train_loader))
-        if (epoch + 1) % config['val_freq'] == 0:
-            val_loss, val_acc = evaluate(model, val_loader, criterion, acc_fn, device, config)
-            losses['val'].append(val_loss)
-            print(f'Epoch {epoch + 1}, Loss: {running_loss / len(train_loader)}, Val Loss: {val_loss}')
-            print(f'Accuracy: {acc / len(train_loader)}, Val Accuracy: {val_acc}')
+    with tqdm(range(config['epochs'])) as t:
+        for epoch in t:
+            train_loss, train_predictions, train_labels = train_one_epoch(model, train_loader, criterion, optimizer, pred_fn, config) 
+            train_acc = get_accuracy(train_predictions, train_labels)       
+            losses['train'].append(train_loss)
+            if (epoch + 1) % config['val_freq'] == 0:
+                val_loss, val_predictions, val_labels = evaluate(model, val_loader, criterion, pred_fn, config)
+                val_acc = get_accuracy(val_predictions, val_labels)
+                losses['val'].append(val_loss)
+                tqdm.write(f'Epoch {epoch + 1}, Loss: {train_loss:.3f}, Val Loss: {val_loss:.3f}')
+                tqdm.write(f'Accuracy: {train_acc * 100.0:.2f}%, Val Accuracy: {val_acc * 100.0:.2f}%')
+            t.set_description(f"Epoch {epoch + 1}")
+    plot_confusion_matrix(train_predictions, train_labels, "train", config)
+    plot_confusion_matrix(val_predictions, val_labels, "val", config)
     plot_loss(losses['train'], losses['val'], config)
-    torch.save(model.state_dict(), config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/model.pth')
+    torch.save(model, os.path.join(config['package_path'], 'logs', config['exp_name'], config['run_name'], 'model.pth'))
+    torch.save(model, os.path.join(config['package_path'], 'logs', 'latest', 'model.pth'))
     np.save(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/train_losses.npy', losses['train'])
     np.save(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/val_losses.npy', losses['val'])
-    return losses, acc, val_acc
+    return losses, train_acc, val_acc
 
 def run(config):
-    if config == None:
-        config = yaml.safe_load(open('config/train.yaml'))
     config['run_name'] = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     print(f'Run name: {config["run_name"]}')
     os.makedirs(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}', exist_ok=True)
@@ -87,10 +52,12 @@ def run(config):
     model = model_class(input_size, output_size, config['hidden_dim'])
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     criterion = getattr(nn, config['criterion'])()
-    acc_fn = globals()[f'get_accuracy_{config["acc_fn"]}']
-
-    losses, acc, val_acc = train(model, train_loader, val_loader, optimizer, criterion, acc_fn, config)
-    return losses, acc, val_acc
+    if config["criterion"] == 'BCEWithLogitsLoss':
+        pred_fn = get_prediction_BCE
+    else:
+        pred_fn = get_prediction_CE
+    losses, train_acc, val_acc = train(model, train_loader, val_loader, optimizer, criterion, pred_fn, config)
+    return losses, train_acc, val_acc
 
 if __name__ == '__main__':
-    run(None)
+    config = get_config('train')

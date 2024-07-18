@@ -7,7 +7,6 @@ lr: 0.001
 batch_size: 32
 train_size: 0.8
 criterion: BCEWithLogitsLoss
-acc_fn: BCE
 dataset: SCML
 data_version: 2
 seed: 42

@@ -17,9 +17,7 @@ class ContactNode:
         self.imu_data = None
         self.contact_state = ContactArray()
         self.contact_state.contacts = [Contact(0, 1), Contact(1, 1)]
-        self.model = MLP(26, 2, 512)
-        latest_run = sorted(os.listdir(package_path + '/logs/MLP_512_BCE'))[-1]
-        self.model.load_state_dict(torch.load(package_path + f'/logs/MLP_512_BCE/{latest_run}/model.pth'))
+        self.model = torch.load(os.path.join(package_path, 'logs', 'latest', 'model.pth'))
         self.model.to('cpu')
         self.joint_state_sub = rospy.Subscriber('/hector_gazebo_drift/joint_states', JointState, self.joint_state_cb)
         self.imu_sub = rospy.Subscriber('/hector_gazebo_drift/imu', Imu, self.imu_cb)

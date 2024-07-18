@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+from common import *
 
 joints = ['L_hip', 'L_hip2', 'L_thigh', 'L_calf', 'L_toe',
             'R_hip', 'R_hip2', 'R_thigh', 'R_calf', 'R_toe']
@@ -76,7 +77,7 @@ def preprocess_data(config=None, instance=None):
                                     parser=read_joint_states,
     )
     imu_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"],
-                                topic_name='/hector_gazebo_drift/imu',
+                                topic_name='/vectornav/IMU',
                                 parser=read_imu,
     )
 
@@ -118,6 +119,5 @@ def run(config):
     np.save(config["package_path"] + f'data/processed/contact_data_{config["data_version"]}.npy', contact_data)
 
 if __name__ == '__main__':
-    import yaml
-    config = yaml.safe_load(open('config/data.yaml'))
+    config = get_config('data')
     preprocess_data(config)
