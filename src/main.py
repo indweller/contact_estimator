@@ -1,4 +1,5 @@
-import yaml
+import torch
+import numpy as np
 import preprocess
 import train
 import test
@@ -7,6 +8,7 @@ import os
 from common import *
 
 def main():
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--test_data_version', type=int, help='Data version', default=None)
     args = parser.parse_args()
@@ -20,16 +22,32 @@ def main():
             data_config['data_version'] = 1
     preprocess.run(data_config)
 
+    run_name = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    print(f'Run name: {run_name}')
+    os.makedirs(data_config['package_path'] + f'logs/{run_name}', exist_ok=True)
+    with open(data_config['package_path'] + f'logs/{run_name}/data.yaml', 'w') as f:
+        yaml.dump(data_config, f)
+
+
     train_config = get_config('train')
     train_config['data_version'] = data_config['data_version']
-    train.run(train_config)
+    train_config['run_name'] = run_name
     
+    torch.manual_seed(train_config['seed'])
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(train_config['seed'])
+
+    with open(data_config['package_path'] + f'logs/{run_name}/train.yaml', 'w') as f:
+        yaml.dump(train_config, f)
+    
+    train.run(train_config)
+
     test_config = get_config('test')
     if args.test_data_version is None:
         test_config['data_version'] = data_config['data_version']
     else:
         test_config['data_version'] = args.test_data_version
-    test_config['exp_name'] = train_config['exp_name']
     test.run(test_config)
 
 if __name__ == '__main__':

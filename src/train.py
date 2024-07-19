@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import yaml
-import matplotlib.pyplot as plt
 from datetime import datetime
 from tqdm import tqdm
 
@@ -28,28 +27,16 @@ def train(model, train_loader, val_loader, optimizer, criterion, pred_fn, config
     plot_confusion_matrix(train_predictions, train_labels, "train", config)
     plot_confusion_matrix(val_predictions, val_labels, "val", config)
     plot_loss(losses['train'], losses['val'], config)
-    torch.save(model, os.path.join(config['package_path'], 'logs', config['exp_name'], config['run_name'], 'model.pth'))
+    torch.save(model, os.path.join(config['package_path'], 'logs', config['run_name'], 'model.pth'))
     torch.save(model, os.path.join(config['package_path'], 'logs', 'latest', 'model.pth'))
-    np.save(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/train_losses.npy', losses['train'])
-    np.save(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/val_losses.npy', losses['val'])
+    np.save(config['package_path'] + f'logs/{config["run_name"]}/train_losses.npy', losses['train'])
+    np.save(config['package_path'] + f'logs/{config["run_name"]}/val_losses.npy', losses['val'])
     return losses, train_acc, val_acc
 
 def run(config):
-    config['run_name'] = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    print(f'Run name: {config["run_name"]}')
-    os.makedirs(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}', exist_ok=True)
-    with open(config['package_path'] + f'logs/{config["exp_name"]}/{config["run_name"]}/train.yaml', 'w') as f:
-        yaml.dump(config, f)
-
-    torch.manual_seed(config['seed'])
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    np.random.seed(config['seed'])
-
-    train_loader, val_loader, input_size, output_size = data_utils.get_dataloaders(config)
-    
+    train_loader, val_loader, input_size = data_utils.get_dataloaders(config)
     model_class = getattr(models, config['model'])
-    model = model_class(input_size, output_size, config['hidden_dim'])
+    model = model_class(input_size, config['output_dim'], config['hidden_dim'])
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     criterion = getattr(nn, config['criterion'])()
     if config["criterion"] == 'BCEWithLogitsLoss':
@@ -61,3 +48,8 @@ def run(config):
 
 if __name__ == '__main__':
     config = get_config('train')
+    torch.manual_seed(config['seed'])
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(config['seed'])
+    run(config)

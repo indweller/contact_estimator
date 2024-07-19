@@ -20,7 +20,7 @@ def plot_loss(train_loss, val_loss, config):
     plt.legend()
     plt.title(f'{config["criterion"]} Loss, model: {config["model"]}, dataset: {config["dataset"]}')
     plt.tight_layout()
-    plt.savefig(os.path.join(config['package_path'], 'logs', config['exp_name'], config['run_name'], 'loss.png'))
+    plt.savefig(os.path.join(config['package_path'], 'logs', config['run_name'], 'loss.png'))
     plt.close()
 
 def plot_confusion_matrix(predictions, labels, name, config):
@@ -44,7 +44,7 @@ def plot_confusion_matrix(predictions, labels, name, config):
     plt.yticks(range(4), ['0 0', '0 1', '1 0', '1 1'])
     plt.title('Confusion Matrix')
     plt.tight_layout()
-    plt.savefig(os.path.join(config['package_path'], 'logs', config['exp_name'], config['run_name'], f'{name}_confusion_matrix.png'))
+    plt.savefig(os.path.join(config['package_path'], 'logs', config['run_name'], f'{name}_confusion_matrix.png'))
     plt.close()
 
 def get_accuracy(predictions, labels):

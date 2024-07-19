@@ -5,9 +5,9 @@ import pandas as pd
 import os
 from common import *
 
-joints = ['L_hip', 'L_hip2', 'L_thigh', 'L_calf', 'L_toe',
+JOINTS = ['L_hip', 'L_hip2', 'L_thigh', 'L_calf', 'L_toe',
             'R_hip', 'R_hip2', 'R_thigh', 'R_calf', 'R_toe']
-imu = ['angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
+IMU = ['angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
         'linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z']
 
 def plot_joint_states(joint_states, name=None):
@@ -15,7 +15,7 @@ def plot_joint_states(joint_states, name=None):
     for i in range(2):
         for j in range(5):
             ax[i, j].plot(joint_states[:, i * 5 + j])
-            ax[i, j].set_title(joints[i * 5 + j])
+            ax[i, j].set_title(JOINTS[i * 5 + j])
     plt.tight_layout()
     plt.savefig(f'joint_states_{name}.png')
 
@@ -25,7 +25,7 @@ def plot_imu(imu_data, name=None):
     for i in range(2):
         for j in range(3):
             ax[i, j].plot(imu_data[:, i * 3 + j])
-            ax[i, j].set_title(imu[i * 3 + j])
+            ax[i, j].set_title(IMU[i * 3 + j])
     plt.tight_layout()
     plt.savefig(f'imu_{name}.png')
 
@@ -72,52 +72,49 @@ def upsample_array(arr, factor):
     return arr
 
 def preprocess_data(config=None, instance=None):
-    joint_state_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"], 
-                                    topic_name='/hector_gazebo_drift/joint_states',
-                                    parser=read_joint_states,
-    )
-    imu_data = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"],
-                                topic_name='/vectornav/IMU',
-                                parser=read_imu,
-    )
+    state_data = []
+    TOPIC_PARSER = {
+        '/hector_gazebo_drift/joint_states': read_joint_states,
+        '/vectornav/IMU': read_imu
+    }
+    for topic in instance["topics"]:
+        state = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"], 
+                                        topic_name=topic,
+                                        parser=TOPIC_PARSER[topic],
+        )
+        state_data.append(state)
+    state_data = np.concatenate(state_data, axis=1)
 
     contact_data = get_csv_data(csv_file=config["package_path"] + 'data/' + instance["csv_file"], 
                                 parser=None
     )
     
-    joint_state_data = joint_state_data[instance["start_time"]:instance["end_time"], :]
-    imu_data = imu_data[instance["start_time"]:instance["end_time"], :]
+    state_data = state_data[instance["start_time"]:instance["end_time"], :]
     contact_data = contact_data[instance["start_time"]:instance["end_time"], :]
 
-    min_len = min(joint_state_data.shape[0], imu_data.shape[0], contact_data.shape[0])
-    joint_state_data = joint_state_data[:min_len, :]
-    imu_data = imu_data[:min_len, :]
+    min_len = min(state_data.shape[0], contact_data.shape[0])
     contact_data = contact_data[:min_len, :]
 
-    print(f"joint_state_data: {joint_state_data.shape}, imu_data: {imu_data.shape}, contact_data: {contact_data.shape}\n")
+    print(f"state_data: {state_data.shape}, contact_data: {contact_data.shape}\n")
 
-    return joint_state_data, imu_data, contact_data
+    return state_data, contact_data
 
 def run(config):
     assert config["package_path"] is not None, "Please provide a package path"
-    joint_states = []
-    imus = []
-    contacts = []
+    state_data = []
+    contact_data = []
     for instance in config['dataset']:
-        joint_state_data, imu_data, contact_data = preprocess_data(config, instance)
-        joint_states.append(joint_state_data)
-        imus.append(imu_data)
-        contacts.append(contact_data)
-    joint_state_data = np.concatenate(joint_states)
-    imu_data = np.concatenate(imus)
-    contact_data = np.concatenate(contacts)
+        states, contacts = preprocess_data(config, instance)
+        state_data.append(states)
+        contact_data.append(contacts)
+    state_data = np.concatenate(state_data)
+    contact_data = np.concatenate(contact_data)
 
-    print(f"Final joint_state_data: {joint_state_data.shape}, imu_data: {imu_data.shape}, contact_data: {contact_data.shape}")
+    print(f"Final joint_state_data: {state_data.shape}, contact_data: {contact_data.shape}")
     os.makedirs(config["package_path"] + 'data/processed/', exist_ok=True)
-    np.save(config["package_path"] + f'data/processed/joint_state_data_{config["data_version"]}.npy', joint_state_data)
-    np.save(config["package_path"] + f'data/processed/imu_data_{config["data_version"]}.npy', imu_data)
+    np.save(config["package_path"] + f'data/processed/state_data_{config["data_version"]}.npy', state_data)
     np.save(config["package_path"] + f'data/processed/contact_data_{config["data_version"]}.npy', contact_data)
 
 if __name__ == '__main__':
     config = get_config('data')
-    preprocess_data(config)
+    run(config)
