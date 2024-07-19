@@ -18,7 +18,7 @@ def plot_loss(train_loss, val_loss, config):
     plt.plot(train_loss, label='train')
     plt.plot(val_loss, label='val')
     plt.legend()
-    plt.title(f'{config["criterion"]} Loss, model: {config["model"]}, dataset: {config["dataset"]}')
+    plt.title(f'{config["criterion"]} Loss, model: {config["model"]}')
     plt.tight_layout()
     plt.savefig(os.path.join(config['package_path'], 'logs', config['run_name'], 'loss.png'))
     plt.close()
@@ -62,7 +62,6 @@ def get_prediction_BCE(outputs):
 def evaluate(model, loader, criterion, pred_fn, config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.eval()
-    model.to(device)
     running_loss = 0.0
     all_predictions, all_labels = [], []
     with torch.no_grad():
@@ -79,8 +78,6 @@ def evaluate(model, loader, criterion, pred_fn, config):
 
 def train_one_epoch(model, loader, criterion, optimizer, pred_fn, config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.train()
-    model.to(device)
     running_loss = 0.0
     all_predictions, all_labels = [], []
     for i, data in enumerate(loader, 0):

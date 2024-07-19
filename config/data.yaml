@@ -1,13 +1,90 @@
 data_version: latest
 dataset:
-  - bag_file: 2024-07-10-18-33-23.bag
+  - bag_file: drop_in_air.bag
     topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
       - /hector_gazebo_drift/joint_states
-      - /vectornav/IMU
-    csv_file: mocap_contact_processed.csv
+    csv_file: drop_in_air.csv
     start_time: 0
-    end_time: 1720661632
-  # - bag_file: 2024-07-10-18-33-23.bag
-  #   csv_file: mocap_contact_processed.csv
-  #   start_time: 1720661632
-  #   end_time: 1720661642
+    end_time: 17206616320
+  - bag_file: left_leg_hop.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: left_leg_hop.csv
+    start_time: 0
+    end_time: 17206616320
+  - bag_file: right_leg_hop.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: right_leg_hop.csv
+    start_time: 0
+    end_time: 17206616320
+  - bag_file: stand_pertube.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: stand_pertube.csv
+    start_time: 0
+    end_time: 17206616320
+  - bag_file: stand_step_concret.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: stand_step_concret.csv
+    start_time: 0
+    end_time: 17206616320
+  # - bag_file: stand.bag
+  #   topics:
+  #     - /hector_gazebo_drift/L_foot_velocity
+  #     - /hector_gazebo_drift/R_foot_velocity
+  #   csv_file: stand.csv
+  #   start_time: 0
+  #   end_time: 17206616320
+  - bag_file: step_stand_pad.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: step_stand_pad.csv
+    start_time: 0
+    end_time: 17206616320
+  - bag_file: stepping.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: stepping.csv
+    start_time: 0
+    end_time: 17206616320
+  - bag_file: swing_in_air.bag
+    topics:
+      # - /hector_gazebo_drift/L_foot_velocity
+      # - /hector_gazebo_drift/R_foot_velocity
+      # - /hector_gazebo_drift/MPC_subphase
+      - /hector_gazebo_drift/joint_states
+    csv_file: swing_in_air.csv
+    start_time: 0
+    end_time: 17206616320
+  # - bag_file: stepping_concret.bag
+  #   topics:
+  #     # - /hector_gazebo_drift/L_foot_velocity
+  #     # - /hector_gazebo_drift/R_foot_velocity
+  #     # - /hector_gazebo_drift/MPC_subphase
+  #     - /hector_gazebo_drift/joint_states
+  #   csv_file: stepping_concret.csv
+  #   start_time: 0
+  #   end_time: 14000

@@ -10,7 +10,7 @@ from common import *
 def run(config):
     run_name = config['run_name']
     if run_name == 'latest':
-        run_name = sorted(os.listdir(config['package_path'] + f'logs'))[-1]
+        run_name = sorted(os.listdir(config['package_path'] + f'logs'))[-2]
         config['run_name'] = run_name
     print(f'Testing on run name: {run_name}')
 
@@ -20,6 +20,7 @@ def run(config):
             config[key] = train_config[key]
 
     test_loader, _, _ = data_utils.get_dataloaders(config)
+
     model = torch.load(os.path.join(config['package_path'], 'logs', run_name, 'model.pth'))
     if config["criterion"] == 'BCEWithLogitsLoss':
         pred_fn = get_prediction_BCE

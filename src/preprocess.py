@@ -39,15 +39,31 @@ def plot_contacts_hist(contact_data, name=None):
     plt.savefig(f'contacts_hist_{name}.png')
 
 def read_joint_states(msg):
-    positions = np.array([pos for pos in msg.position])
+    # positions = np.array([pos for pos in msg.position])
     velocities = np.array([vel for vel in msg.velocity])
-    joint_states = np.concatenate((positions, velocities))
+    efforts = np.array([eff for eff in msg.effort])
+    # joint_states = np.concatenate((positions, velocities, efforts))
+    joint_states = np.concatenate((velocities, efforts))
+    # joint_states = efforts
     return joint_states
 
 def read_imu(msg):
     imu_data = np.array([msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z,
                          msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z])
     return imu_data
+
+def read_foot_velocity(msg):
+    msg = msg.twist
+    foot_velocity = np.array([msg.linear.x, msg.linear.y, msg.linear.z, msg.angular.x, msg.angular.y, msg.angular.z])
+    return foot_velocity
+
+def read_contact_state(msg):
+    contact_state = np.array([msg.contacts[0].indicator, msg.contacts[1].indicator], dtype=np.float32)
+    return contact_state
+
+def read_mpc_subphase(msg):
+    mpc_subphase = np.array(msg.data, dtype=np.float32)
+    return mpc_subphase
 
 def get_csv_data(csv_file=None, parser=None):
     data = pd.read_csv(csv_file, header=None, sep='\t')
@@ -75,14 +91,21 @@ def preprocess_data(config=None, instance=None):
     state_data = []
     TOPIC_PARSER = {
         '/hector_gazebo_drift/joint_states': read_joint_states,
-        '/vectornav/IMU': read_imu
+        '/vectornav/IMU': read_imu,
+        '/hector_gazebo_drift/L_foot_velocity': read_foot_velocity,
+        '/hector_gazebo_drift/R_foot_velocity': read_foot_velocity,
+        '/hector_gazebo_drift/contact/state': read_contact_state,
+        '/hector_gazebo_drift/MPC_subphase': read_mpc_subphase,
     }
+    print(f"Processing instance: {instance['bag_file']}")
     for topic in instance["topics"]:
         state = get_rosbag_data(bag_file=config["package_path"] + 'data/' + instance["bag_file"], 
                                         topic_name=topic,
                                         parser=TOPIC_PARSER[topic],
         )
         state_data.append(state)
+    min_state_len = min([state.shape[0] for state in state_data])
+    state_data = [state[:min_state_len, :] for state in state_data]
     state_data = np.concatenate(state_data, axis=1)
 
     contact_data = get_csv_data(csv_file=config["package_path"] + 'data/' + instance["csv_file"], 
@@ -93,6 +116,7 @@ def preprocess_data(config=None, instance=None):
     contact_data = contact_data[instance["start_time"]:instance["end_time"], :]
 
     min_len = min(state_data.shape[0], contact_data.shape[0])
+    state_data = state_data[:min_len, :]
     contact_data = contact_data[:min_len, :]
 
     print(f"state_data: {state_data.shape}, contact_data: {contact_data.shape}\n")

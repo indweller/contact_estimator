@@ -12,8 +12,11 @@ from common import *
 
 def train(model, train_loader, val_loader, optimizer, criterion, pred_fn, config):
     losses = {'train': [], 'val': []}
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
     with tqdm(range(config['epochs'])) as t:
         for epoch in t:
+            model.train()
             train_loss, train_predictions, train_labels = train_one_epoch(model, train_loader, criterion, optimizer, pred_fn, config) 
             train_acc = get_accuracy(train_predictions, train_labels)       
             losses['train'].append(train_loss)
@@ -37,6 +40,7 @@ def run(config):
     train_loader, val_loader, input_size = data_utils.get_dataloaders(config)
     model_class = getattr(models, config['model'])
     model = model_class(input_size, config['output_dim'], config['hidden_dim'])
+    print(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
     criterion = getattr(nn, config['criterion'])()
     if config["criterion"] == 'BCEWithLogitsLoss':
